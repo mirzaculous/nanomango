@@ -1,6 +1,11 @@
 /* ══════════════════════════════════════
    NANO MANGO — JS
+   With Google Sheets Integration
 ══════════════════════════════════════ */
+
+// ★ PASTE YOUR GOOGLE APPS SCRIPT URL HERE ★
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxgcNwe1XvFXdY_uw58z4kVRo0LDkCiS2UPnJ_QXxc4XV95KSW3aR5GH_AVYZESzBMP/exec";
+// Example: "https://script.google.com/macros/s/AKfycbx.../exec"
 
 /* ── Loader ── */
 window.addEventListener('load', () => {
@@ -41,7 +46,7 @@ const observer = new IntersectionObserver((entries) => {
 reveals.forEach(el => observer.observe(el));
 
 /* ── Counter animation ── */
-function animateCounter(el, target, suffix) {
+function animateCounter(el, target) {
   let start = 0;
   const duration = 1600;
   const step = target / (duration / 16);
@@ -145,21 +150,21 @@ document.addEventListener('mousemove', (e) => {
   document.querySelector('.orb2').style.transform = `translate(${-mx * 0.3}px, ${-my * 0.3}px)`;
 });
 
-/* ── Contact Form Validation ── */
+/* ── Contact Form — Google Sheets Integration ── */
 const form = document.getElementById('contactForm');
 if (form) {
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     let valid = true;
 
-    const name = document.getElementById('name');
-    const email = document.getElementById('email');
+    const name    = document.getElementById('name');
+    const email   = document.getElementById('email');
+    const service = document.getElementById('service');
     const message = document.getElementById('message');
-    const nameErr = document.getElementById('nameErr');
+    const nameErr  = document.getElementById('nameErr');
     const emailErr = document.getElementById('emailErr');
-    const msgErr = document.getElementById('msgErr');
+    const msgErr   = document.getElementById('msgErr');
 
-    // Reset
     [name, email, message].forEach(el => el.classList.remove('error'));
     [nameErr, emailErr, msgErr].forEach(el => el.classList.remove('show'));
 
@@ -174,26 +179,46 @@ if (form) {
       message.classList.add('error'); msgErr.classList.add('show'); valid = false;
     }
 
-    if (valid) {
-      const btn = form.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.querySelector('.btn-text').textContent = 'Sending...';
+    if (!valid) return;
+
+    const btn = form.querySelector('button[type="submit"]');
+    const btnText = btn.querySelector('.btn-text');
+    btn.disabled = true;
+    btnText.textContent = 'Sending...';
+
+    const payload = {
+      name:    name.value.trim(),
+      email:   email.value.trim(),
+      service: service.value || 'Not selected',
+      message: message.value.trim()
+    };
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      form.reset();
+      document.getElementById('formSuccess').classList.add('show');
+      btnText.textContent = 'Send Message';
+      btn.disabled = false;
 
       setTimeout(() => {
-        form.reset();
-        document.getElementById('formSuccess').classList.add('show');
-        btn.disabled = false;
-        btn.querySelector('.btn-text').textContent = 'Send Message';
-        setTimeout(() => {
-          document.getElementById('formSuccess').classList.remove('show');
-        }, 5000);
-      }, 1200);
+        document.getElementById('formSuccess').classList.remove('show');
+      }, 6000);
+
+    } catch (err) {
+      btnText.textContent = 'Send Message';
+      btn.disabled = false;
+      alert('Something went wrong. Please email us directly at hello@nanomango.ai');
     }
   });
 
-  // Live validation clear
-  ['name','email','message'].forEach(id => {
-    document.getElementById(id).addEventListener('input', function() {
+  ['name', 'email', 'message'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function () {
       this.classList.remove('error');
       document.getElementById(id + 'Err').classList.remove('show');
     });
